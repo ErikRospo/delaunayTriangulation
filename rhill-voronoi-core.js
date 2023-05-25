@@ -11,6 +11,7 @@ Date: January 21, 2013
 Description: This is my personal Javascript implementation of
 Steven Fortune's algorithm to compute Voronoi diagrams.
 
+Modified by ErikRospo
 License: See https://github.com/gorhill/Javascript-Voronoi/LICENSE.md
 Credits: See https://github.com/gorhill/Javascript-Voronoi/CREDITS.md
 History: See https://github.com/gorhill/Javascript-Voronoi/CHANGELOG.md

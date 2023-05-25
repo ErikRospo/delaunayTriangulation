@@ -41,10 +41,11 @@ options
     }
   });
 if (metaballs) {
-  transparency = 0;
+  transparency = 1;
+  particleMultiplier*=0.05;
 }
-if (voronoi){
-  dtMultiplier/=2
+if (voronoi) {
+  dtMultiplier /= 2;
 }
 let voronoiObject = new Voronoi();
 /** @type {{vertices:Voronoi[],edges:Voronoi.Edge[],cells:Voronoi.Cell[]}} */
@@ -69,6 +70,7 @@ class Point {
     this.color = !randomParticleColors
       ? "#ffffff"
       : `hsl(${Math.random() * 360}, 100%, 50%)`;
+    this.radius = 4.0;
   }
   update(dt) {
     this.x += this.vx * dt;
@@ -107,7 +109,7 @@ function getTriangles(points) {
   }
   return coordinates;
 }
-
+let fills=ctx.createImageData(cw,ch);
 /**
  * @param {Point[]} points
  * @param {CanvasRenderingContext2D} ctx
@@ -117,7 +119,7 @@ function render(points, ctx) {
   points.forEach((element) => {
     ctx.fillStyle = element.color;
     ctx.beginPath();
-    ctx.arc(element.x, element.y, 4, 0, PI2);
+    ctx.arc(element.x, element.y, element.radius, 0, PI2);
     ctx.fill();
   });
   function drawTlines(triangle, a, b) {
@@ -160,21 +162,37 @@ function render(points, ctx) {
       (v) => {
         /**@type {Set<{x:number,y:number}>} */
         ctx.beginPath();
-        ctx.fillStyle=v.site.color;
+        ctx.fillStyle = v.site.color;
         v.halfedges.forEach(
           /**@param {{site:Point,getStartpoint:()=>{x:number,y:number},getEndpoint:()=>{x:number,y:number}}} e*/
           (e) => {
-            
-            let v1=e.getStartpoint()
-            let v2=e.getEndpoint()
-            ctx.lineTo(v1.x,v1.y)
-            ctx.lineTo(v2.x,v2.y)
+
+            let v1 = e.getStartpoint();
+            let v2 = e.getEndpoint();
+            ctx.lineTo(v1.x, v1.y);
+            ctx.lineTo(v2.x, v2.y);
           });
-          
-          ctx.fill()
+
+        ctx.fill();
       });
   } else if (metaballs) {
-    //todo
+    fills.data.fill(0)
+    let m
+    
+    for (let i = 0; i < fills.data.length; i+=4) {
+      let x=(i/4)%cw;
+      let y=Math.round((i/4)/cw);
+      let v = points.reduce((l,p) => {
+        const a = 1 / ((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y));
+        return l+(a * a);
+      },0)*10e10;
+      v=v>255?255:0;
+      fills.data[i]=v
+      fills.data[i+1]=v
+      fills.data[i+2]=v
+      fills.data[i+3]=255
+    }
+    ctx.putImageData(fills,0,0);
   }
 }
 
