@@ -1,4 +1,5 @@
 import Delaunator from "https://cdn.skypack.dev/delaunator@5.0.0";
+import Voronoi from "./rhill-voronoi-core.js";
 const options = window.location.search;
 
 let transparency = 0.2;
@@ -6,6 +7,10 @@ let dtMultiplier = 1;
 let particleMultiplier = 1;
 let color = "#ffffff";
 let randomParticleColors = false;
+let delaunay = true;
+let voronoi = false;
+let metaballs = false;
+
 options
   .slice(1)
   .split("&")
@@ -21,9 +26,29 @@ options
       color = value;
     } else if (key === "randomParticleColors" || key === "rpc") {
       randomParticleColors = true;
+    } else if (key === "d") {
+      delaunay = true;
+      voronoi = false;
+      metaballs = false;
+    } else if (key === "v") {
+      voronoi = true;
+      delaunay = false;
+      metaballs = false;
+    } else if (key === "m") {
+      metaballs = true;
+      delaunay = false;
+      voronoi = false;
     }
   });
-
+if (metaballs) {
+  transparency = 0;
+}
+if (voronoi){
+  dtMultiplier/=2
+}
+let voronoiObject = new Voronoi();
+/** @type {{vertices:Voronoi[],edges:Voronoi.Edge[],cells:Voronoi.Cell[]}} */
+var diagram;
 const PI2 = 2 * Math.PI;
 /** @type {HTMLCanvasElement} */
 const canvas = document
@@ -114,15 +139,43 @@ function render(points, ctx) {
     ctx.lineTo(pointB.x, pointB.y);
     ctx.stroke();
   }
-  let tris = getTriangles(points);
-  tris.forEach((triangle) => {
-    // drawTlines();
+  if (delaunay) {
+    let tris = getTriangles(points);
+    tris.forEach((triangle) => {
+      // drawTlines();
 
 
-    drawTlines(triangle, 0, 1);
-    drawTlines(triangle, 1, 2);
-    drawTlines(triangle, 2, 0);
-  });
+      drawTlines(triangle, 0, 1);
+      drawTlines(triangle, 1, 2);
+      drawTlines(triangle, 2, 0);
+    });
+  }
+  else if (voronoi) {
+    if (diagram) {
+      voronoiObject.recycle(diagram);
+    }
+    diagram = voronoiObject.compute(points, { xl: 0, xr: cw, yt: 0, yb: ch });
+    diagram.cells.forEach(
+      /**@param {{site:Point,halfedges:Voronoi.Halfedge[]}} v*/
+      (v) => {
+        /**@type {Set<{x:number,y:number}>} */
+        ctx.beginPath();
+        ctx.fillStyle=v.site.color;
+        v.halfedges.forEach(
+          /**@param {{site:Point,getStartpoint:()=>{x:number,y:number},getEndpoint:()=>{x:number,y:number}}} e*/
+          (e) => {
+            
+            let v1=e.getStartpoint()
+            let v2=e.getEndpoint()
+            ctx.lineTo(v1.x,v1.y)
+            ctx.lineTo(v2.x,v2.y)
+          });
+          
+          ctx.fill()
+      });
+  } else if (metaballs) {
+    //todo
+  }
 }
 
 ctx.fillStyle = "black";
@@ -165,7 +218,7 @@ function animate() {
   render(points, ctx);
 
   points = points.map(
-    /** @param {Point} v*/ (v) => {
+    /** @param {Point} v*/(v) => {
       if (v.moves) {
         let vt = v.update((dt / 5) * dtMultiplier);
         if (vt.x >= cw || vt.x <= 0 || vt.y >= ch || vt.y <= 0) {
