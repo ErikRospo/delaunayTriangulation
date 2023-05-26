@@ -46,6 +46,7 @@ if (metaballs) {
 }
 if (voronoi) {
   dtMultiplier /= 2;
+  randomParticleColors=true;
 }
 let voronoiObject = new Voronoi();
 /** @type {{vertices:Voronoi[],edges:Voronoi.Edge[],cells:Voronoi.Cell[]}} */
